@@ -486,46 +486,118 @@ init -100 python:
 
     #### class: PannableDisplayable()
     # 
-    # Wrapping an object in a Pannable allows one to create a viewport-like
+    # Wrapping an object in a Pannable allows one to create a Viewport-like
     # displayable that's controlled by keyboard and mouse position.
+    #
+    # The pannable displayable is used in the gallery to allow people to
+    # see images that are larger than the screen size.
     class PannableDisplayable(renpy.Displayable):
 
+        ##### method: __init__(displayable, **properties)
+        # @type: Displayable -> unit
+        #
+        # Initialises an instance of `PannableDisplayable`.
         def __init__(self, displayable, **properties):
             super(PannableDisplayable, self).__init__(**properties)
- 
+
+            # The displayable that we'll be showing the user. We assume this
+            # displayable is always bigger than the screen size, although there
+            # are no problems if it isn't — this displayable is just kind of
+            # useless for those cases.
             self.displayable = renpy.displayable(displayable)
+
+            # The `PannableDisplayable` shows two (configurable) "arrows" at
+            # the top and bottom of the screen. Hovering the mouse over the areas
+            # where these arrows are displayed will pan the displayable towards
+            # that direction.
+            #
+            # We consider 200 pixels at the top and at the bottom of the screen
+            # for this area, as shown in the graph below:
+            #
+            # @code("text"){{{
+            #     +---------------------------------------------+  -.
+            #     |                (arrow up)                   |   |- 200px
+            #     |_____________________________________________|  _,
+            #     |                                             |   |
+            #     |                                             |   |            
+            #     |                                             |   |
+            #     |              (displayable)                  |   |- 400px
+            #     |                                             |   |
+            #     |                                             |   |
+            #     |_____________________________________________|  _,
+            #     |                                             |   |
+            #     |               (arrow down)                  |   |- 200px
+            #     +---------------------------------------------+  -'
+            # }}}
             self.arrow_up = renpy.displayable("assets/ui/pan-up-idle.png")
             self.arrow_up_hover = renpy.displayable("assets/ui/pan-up-hover.png")
             self.arrow_down = renpy.displayable("assets/ui/pan-down-idle.png")
             self.arrow_down_hover = renpy.displayable("assets/ui/pan-down-hover.png")
 
-            self.offset = 0
-            self.height = 0
+
+            # How many pixels we pan the image by each frame.
             self.speed = 10
+
+            # Determines the vertical offset in which to draw the child
+            # displayable. Note that this value is always clamped between 0 and
+            # this displayable's height.
+            self.offset = 0
+
+            # The `height` of this displayable, and the `child_height` of the
+            # child displayable. These values are automatically computed when
+            # rendering the displayable and shouldn't be changed.
+            self.height = 0
             self.child_height = 0
+
+            # Tracks the animation times so we can properly display the child
+            # displayable and its animation (if any).
             self.shown_time = 0
             self.anim_time = 0
+
+            # Tracks the direction in which we are panning the image. This is
+            # changed when the user places the mouse within the area of one
+            # of the arrows. Possible values are `None`, `"up"` and `"down"`.
             self.dir = None
 
 
+        ##### method: get_render(is_hovered, idle, hover, w, h, st, at)
+        # @type: bool, Displayable, Displayable, int, int, int, int -> Displayable
+        #
+        # A convenience function for returning which arrow to show the user.
         def get_render(self, is_hovered, idle, hover, w, h, st, at):
             if is_hovered:
                 return renpy.render(hover, w, h, st, at)
             else:
                 return renpy.render(idle, w, h, st, at)
 
+        ##### method: clamped(offset)
+        # @type: int -> int
+        #
+        # Makes sure the offset is no less than 0, and no more than the
+        # available height for fitting the child displayable. This ensures
+        # that we're always using the entire size of the `PannableDisplayable`
+        # to show the child displayable.
         def clamped(self, offset):
-            print offset, self.height, self.child_height
             return max(0, min(offset, self.child_height - self.height))
-            
+
+
+        ##### method: render(width, height, st, at)
+        # @type: int, int, int, int -> Render
+        #
+        # Called by Ren'Py to render the displayable.
         def render(self, width, height, st, at):
+            # Update the amount of vertical space we have to show this displayable.
             self.height = height
-            
+
+            # Renders the child displayable and updates the amount of space it's
+            # going to take, so we can properly fit it on the screen.
             child = renpy.render(self.displayable, width, height, st, at)
             (cw, ch) = child.get_size()
 
             self.child_height = ch
 
+            # Renders the child displayable and the proper arrows for panning
+            # this displayable.
             render = renpy.Render(width, height)
             render.blit(child, (0, -int(self.offset)))
 
@@ -549,10 +621,20 @@ init -100 python:
             render.blit(arrow_up, (width - aw - 20, mid - ah - 200))
             render.blit(arrow_down, (width - aw - 20, mid + 200))
 
+            # Asks Ren'Py to redraw this displayable soon.
             renpy.redraw(self, 0.025)
             
             return render
 
+
+        ##### method: event(ev, x, y, st)
+        # @type: pygame.event, int, int, int
+        #
+        # Called by Ren'Py whenever this displayable has a chance to handle
+        # some PyGame event. We need this to handle keyboard-based panning
+        # (by looking at keys pressed when focusing this displayable), and
+        # mouse pointer-based panning, by looking at the x,y coordinates
+        # of the mouse pointer.
         def event(self, ev, x, y, st):
             mid = self.height / 2
             
@@ -571,5 +653,9 @@ init -100 python:
             return super(PannableDisplayable, self).event(ev, x, y, st)
             
 
+        ##### method: visit()
+        # @type: unit -> list(Displayable)
+        #
+        # Ren'Py uses this list to predict images and stuff.
         def visit(self):
             return [self.displayable]
