@@ -17,7 +17,16 @@ queen@robotlolita.me, or through Twitter
 them! ♥
 
 
-## Prerequisites
+## For players
+
+If you want to play the game, just [download the game from our Itch.io page~!](http://sugarscript.itch.io/cute-demon-crashers)
+
+
+
+## For those who want to modify this game
+
+
+### Prerequisites
 
 You'll need Ren'Py to run this game. The *Replay* feature requires a
 [modified version of Ren'Py][renpy]. You'll need to either patch a Ren'Py
@@ -26,7 +35,7 @@ distribution or compile it yourself from the source code.
 [renpy]: https://github.com/robotlolita/renpy/commit/38b2ce06afdd1c920e252b3d60a4b7c67e0a8376
 
 
-## Running the game
+### Running the game
 
 Only the source code is provided in this repository, so if you want to play
 around with it and run the game with your changes, you'll need to:
@@ -41,7 +50,7 @@ around with it and run the game with your changes, you'll need to:
  4. Run it through Ren'Py.
 
 
-## Documentation
+### Documentation
 
 The source code is heavily documented (and commented) in a sort of
 literate-style programming, so you should be able to follow the source as if
